@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Animated, PanResponder, View } from "react-native";
 
 import Card from "../Card";
@@ -11,6 +11,12 @@ const Main = () => {
   const [foods, setFoods] = useState(foodsArray);
   const swipe = useRef(new Animated.ValueXY()).current;
   const tiltSign = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (!foods.length) {
+      setFoods(foodsArray);
+    }
+  }, [foods.length]);
 
   const panResponder = PanResponder.create({
     onMoveShouldSetPanResponder: () => true,
@@ -27,10 +33,12 @@ const Main = () => {
           duration: 200,
           toValue: {
             x: direction * 500,
+            // CARD.OUT_OF_SCREEN
+            // 500
             y: dy,
           },
           useNativeDriver: true,
-        }).start();
+        }).start(removeTopCard);
       } else {
         Animated.spring(swipe, {
           toValue: {
@@ -43,6 +51,24 @@ const Main = () => {
       }
     },
   });
+
+  const removeTopCard = useCallback(() => {
+    setFoods((prevState) => prevState.slice(1));
+    swipe.setValue({ x: 0, y: 0 });
+  }, [swipe]);
+
+  const handleChoice = useCallback(
+    (direction) => {
+      Animated.timing(swipe.x, {
+        toValue: direction * 500,
+        // 500
+        // CARD.OUT_OF_SCREEN
+        duration: 400,
+        useNativeDriver: true,
+      }).start(removeTopCard);
+    },
+    [removeTopCard, swipe.x]
+  );
 
   return (
     <View style={styles.container}>
@@ -65,7 +91,7 @@ const Main = () => {
         })
         .reverse()}
 
-      <Footer />
+      <Footer handleChoice={handleChoice}/>
     </View>
   );
 };
